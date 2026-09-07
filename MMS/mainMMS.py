@@ -1,3 +1,4 @@
+import calendar
 import os
 import glob
 import time
@@ -109,8 +110,8 @@ def get_configs():
         "download_dir": os.getenv("GOER_DOWNLOAD_DIR"), "excel_path": os.getenv("GOER_EXCEL_PATH"),
         "graf_path": os.getenv("GOER_GRAF_PATH"), "backup_dir": os.getenv("GOER_BACKUP_DIR")},
         {"name": "Lu", "key_path": os.getenv("LU_KEY_PATH"), "key_pass": os.getenv("LU_KEY_PASSWORD"),
-         "download_dir": os.getenv("LU_DOWNLOAD_DIR"), "excel_path": os.getenv("LU_EXCEL_PATH"),
-         "graf_path": os.getenv("LU_GRAF_PATH"), "backup_dir": os.getenv("LU_BACKUP_DIR")},
+        "download_dir": os.getenv("LU_DOWNLOAD_DIR"), "excel_path": os.getenv("LU_EXCEL_PATH"),
+        "graf_path": os.getenv("LU_GRAF_PATH"), "backup_dir": os.getenv("LU_BACKUP_DIR")},
     ]
 
 
@@ -124,14 +125,22 @@ def auto_monthly_reload():
     today = date.today()
 
     if today.day == 12:
-        start_day, end_day = 1, 11
+        start_date_obj = date(today.year, today.month, 1)
+        end_date_obj = date(today.year, today.month, 11)
     elif today.day == 23:
-        start_day, end_day = 12, 22
+        start_date_obj = date(today.year, today.month, 12)
+        end_date_obj = date(today.year, today.month, 22)
+    elif today.day == 1:
+        prev_month = today.month - 1 or 12
+        prev_year = today.year if today.month > 1 else today.year - 1
+        last_day = calendar.monthrange(prev_year, prev_month)[1]
+        start_date_obj = date(prev_year, prev_month, 23)
+        end_date_obj = date(prev_year, prev_month, last_day)
     else:
-        return  # інші числа - нічого не робимо
+        return
 
-    start_date = date(today.year, today.month, start_day).strftime("%d%m%Y")
-    end_date = date(today.year, today.month, end_day).strftime("%d%m%Y")
+    start_date = start_date_obj.strftime("%d%m%Y")
+    end_date = end_date_obj.strftime("%d%m%Y")
 
     print(f"\n🔁 АВТО-ПЕРЕВИВАНТАЖЕННЯ ({today.day} числа): {start_date} - {end_date}")
     for cfg in get_configs():
@@ -173,8 +182,8 @@ if __name__ == "__main__":
         print(f"🤖 Очікування 13:45 (Headless={HEADLESS_MODE})...")
         schedule.every().day.at("13:45").do(daily_job)
         schedule.every().day.at("13:00").do(auto_monthly_reload)
-        schedule.every().day.at("15:00").do(monthly_template_job)
-        schedule.every().day.at("14:30").do(graf_check_job)
+        schedule.every().day.at("14:45").do(monthly_template_job)
+        schedule.every().day.at("15:05").do(graf_check_job)
         #daily_job()
         while True:
             schedule.run_pending()
