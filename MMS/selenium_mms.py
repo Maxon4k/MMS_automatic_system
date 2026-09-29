@@ -16,21 +16,11 @@ from selenium.webdriver.common.keys import Keys
 
 # --- КОНФІГУРАЦІЯ ---
 load_dotenv()
-KEY_PASSWORD = os.getenv("KEY_PASSWORD2")
-KEY_PATH = os.getenv("KEY_PATH2")
 DOWNLOAD_DIR = os.getenv("DOWNLOAD_DIR")
 
 
-def run_downloader(key_path=None, key_password=None, download_dir=None, start_date=None, end_date=None,
+def run_downloader(login=None, password=None, download_dir=None, start_date=None, end_date=None,
                    use_headless=True):
-    """
-    Універсальна функція завантаження.
-    Якщо дати не передані, завантажує за вчора.
-    Якщо передані різні дати — активує режим 'Інтервал (погодинно)'.
-    """
-    # Використовуємо передані параметри або значення з .env за замовчуванням
-    k_path = key_path if key_path else KEY_PATH
-    k_pass = key_password if key_password else KEY_PASSWORD
     d_dir = download_dir if download_dir else DOWNLOAD_DIR
 
     # Визначаємо дати
@@ -88,59 +78,53 @@ def run_downloader(key_path=None, key_password=None, download_dir=None, start_da
         except:
             print("ℹ️ Банер Cookies не з'явився.")
 
-        print("Крок 1: Вхід через ЦСК...")
-        btn_signin = wait.until(
-            EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'Sign in with Certification Centre')]")))
-        driver.execute_script("arguments[0].click();", btn_signin)
-        time.sleep(3)
+        print("Крок 1: Вхід через логін та пароль...")
+        panel = wait.until(EC.element_to_be_clickable(
+            (By.CSS_SELECTOR, "mat-expansion-panel-header.accordion__header-panel")))
+        time.sleep(1)
 
-        print("Вибір типу носія: Файловий носій...")
-        file_method = wait.until(EC.element_to_be_clickable((By.XPATH, "//span[contains(text(), 'Файловий носій')]")))
-        driver.execute_script("arguments[0].click();", file_method)
-        time.sleep(3)
+        for attempt in range(6):
+            if panel.get_attribute("aria-expanded") == "true":
+                break
+            try:
+                if attempt % 2 == 0:
+                    panel.click()
+                else:
+                    panel.send_keys(Keys.ENTER)
+            except Exception:
+                driver.execute_script("arguments[0].click();", panel)
+            time.sleep(1.5)
+        else:
+            raise Exception("Акордеон логіна не розгорнувся")
 
-        print("Крок 2: Вибір АЦСК...")
-        select_element = wait.until(EC.presence_of_element_located((By.ID, "CAsServersSelect")))
-        select = Select(select_element)
-        try:
-            select.select_by_value("24")
-        except:
-            select.select_by_visible_text('КНЕДП ТОВ "Центр сертифікації ключів "Україна"')
-        time.sleep(3)
+        print("Крок 2: Введення логіна і пароля...")
+        login_field = wait.until(EC.visibility_of_element_located(
+            (By.CSS_SELECTOR, "#login-page-form input:not([type='password'])")))
+        login_field.click()
+        login_field.send_keys(login)
 
-        print("Крок 3: Завантаження ключа...")
-        file_input = driver.find_element(By.ID, "PKeyFileInput")
-        file_input.send_keys(os.path.abspath(k_path))
-        time.sleep(3)
+        password_field = driver.find_element(By.CSS_SELECTOR, "#login-page-form input[type='password']")
+        password_field.click()
+        password_field.send_keys(password)
+        time.sleep(1)
 
-        print("Крок 4: Введення пароля...")
-        password_field = driver.find_element(By.ID, "PKeyPassword")
-        password_field.send_keys(k_pass)
-        time.sleep(3)
-
-        print("Крок 5: Натискання Продовжити...")
-        btn_login = driver.find_element(By.ID, "id-app-login-sign-form-file-key-sign-button")
+        print("Крок 3: Натискання Sign in...")
+        btn_login = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, "//mat-expansion-panel[.//form[@id='login-page-form']]"
+                       "//button[@mat-raised-button and not(@disabled)]")))
         driver.execute_script("arguments[0].click();", btn_login)
 
         print("Очікуємо завантаження кабінету...")
         time.sleep(5)
 
-        print("Крок 6: Підтвердження угоди...")
-        try:
-            btn_accept = wait.until(EC.element_to_be_clickable((By.ID, "btnAcceptUserDataAgreement")))
-            driver.execute_script("arguments[0].click();", btn_accept)
-            time.sleep(3)
-        except:
-            print("Угода не з'явилась або вже прийнята.")
-
         # --- НАВІГАЦІЯ ---
-        print("Крок 7: Відкриття Балансування NEW...")
+        print("Крок 4: Відкриття Балансування NEW...")
         btn_menu = wait.until(
             EC.element_to_be_clickable((By.XPATH, "//button[.//span[contains(text(), 'Балансування NEW')]]")))
         driver.execute_script("arguments[0].click();", btn_menu)
         time.sleep(5)
 
-        print("Крок 8: Перехід до компонентів...")
+        print("Крок 5: Перехід до компонентів...")
         btn_components = wait.until(
             EC.element_to_be_clickable(
                 (By.XPATH, "//button[@role='menuitem' and contains(., 'Компоненти балансування')]")))
@@ -154,7 +138,7 @@ def run_downloader(key_path=None, key_password=None, download_dir=None, start_da
         driver.switch_to.frame(iframe)
 
         # Крок 9: Вибір типу даних (Робимо ПЕРЕД датами)
-        print("Крок 9: Вибір типу даних...")
+        print("Крок 6: Вибір типу даних...")
         dropdowns = driver.find_elements(By.CSS_SELECTOR, ".p-dropdown")
         if dropdowns:
             driver.execute_script("arguments[0].click();", dropdowns[0])
@@ -218,7 +202,7 @@ def run_downloader(key_path=None, key_password=None, download_dir=None, start_da
         print("✅ Дати введені, переходимо до налаштувань таблиці...")
         time.sleep(2)
 
-        print("Крок 11: Пагінація 100...")
+        print("Крок 7: Пагінація 100...")
         dropdown_pagination = wait.until(
             EC.element_to_be_clickable(
                 (By.XPATH, "//div[contains(@class, 'p-paginator')]//div[contains(@class, 'p-dropdown')]"))
@@ -234,7 +218,7 @@ def run_downloader(key_path=None, key_password=None, download_dir=None, start_da
         driver.execute_script("arguments[0].click();", option_100)
         time.sleep(3)
 
-        print("Крок 12: Вибір всіх елементів...")
+        print("Крок 8: Вибір всіх елементів...")
         try:
             target_element = wait.until(
                 EC.presence_of_element_located((
@@ -248,7 +232,7 @@ def run_downloader(key_path=None, key_password=None, download_dir=None, start_da
 
         time.sleep(2)
 
-        print("Крок 13: Зняття GENERATION")
+        print("Крок 9: Зняття GENERATION")
         try:
             generation_checkboxes = driver.find_elements(By.XPATH,
                                                          "//tr[.//div[normalize-space()='GENERATION']]//input[@type='checkbox']")
@@ -260,7 +244,7 @@ def run_downloader(key_path=None, key_password=None, download_dir=None, start_da
 
         time.sleep(2)
 
-        print("Крок 14: Звіт...")
+        print("Крок 10: Звіт...")
         try:
             report_dropdown = wait.until(
                 EC.element_to_be_clickable((By.XPATH, "//div[@role='button' and @aria-label='Вибрати мітку']"))
@@ -276,7 +260,7 @@ def run_downloader(key_path=None, key_password=None, download_dir=None, start_da
 
         time.sleep(5)
 
-        print("Крок 15: Графік")
+        print("Крок 11: Графік")
         try:
             show_btn = wait.until(
                 EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Показати часові ряди']"))
@@ -302,7 +286,7 @@ def run_downloader(key_path=None, key_password=None, download_dir=None, start_da
         #except Exception as e:
         #    print(f"Помилка зміни одиниць: {e}")
 
-        print("Крок 17: Чекбокс 'Зріз даних'")
+        print("Крок 12: Чекбокс 'Зріз даних'")
         try:
             target_checkbox = wait.until(
                 EC.presence_of_element_located((
@@ -315,7 +299,7 @@ def run_downloader(key_path=None, key_password=None, download_dir=None, start_da
         except Exception as e:
             print(f"Помилка чекбокса 'Зріз даних': {e}")
 
-        print("Крок 18: Натискання кнопки 'Завантажити CSV'...")
+        print("Крок 13: Натискання кнопки 'Завантажити CSV'...")
         try:
             download_btn = wait.until(
                 EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='Завантажити CSV']"))

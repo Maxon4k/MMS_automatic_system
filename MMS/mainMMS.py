@@ -39,7 +39,7 @@ def run_process_for_company(cfg, start_date=None, end_date=None):
     print(f"\n🚀 >>> ОБРОБКА: {name} <<<")
 
     # Передаємо стан HEADLESS_MODE в селеніум
-    selenium_mms.run_downloader(cfg['key_path'], cfg['key_pass'], cfg['download_dir'],
+    selenium_mms.run_downloader(cfg['login'], cfg['password'], cfg['download_dir'],
                                 start_date, end_date, use_headless=HEADLESS_MODE)
     time.sleep(5)
 
@@ -105,13 +105,12 @@ def run_process_for_company(cfg, start_date=None, end_date=None):
 
 def get_configs():
     return [
-
-        {"name": "Goer", "key_path": os.getenv("GOER_KEY_PATH"), "key_pass": os.getenv("GOER_KEY_PASSWORD"),
-        "download_dir": os.getenv("GOER_DOWNLOAD_DIR"), "excel_path": os.getenv("GOER_EXCEL_PATH"),
-        "graf_path": os.getenv("GOER_GRAF_PATH"), "backup_dir": os.getenv("GOER_BACKUP_DIR")},
-        {"name": "Lu", "key_path": os.getenv("LU_KEY_PATH"), "key_pass": os.getenv("LU_KEY_PASSWORD"),
-        "download_dir": os.getenv("LU_DOWNLOAD_DIR"), "excel_path": os.getenv("LU_EXCEL_PATH"),
-        "graf_path": os.getenv("LU_GRAF_PATH"), "backup_dir": os.getenv("LU_BACKUP_DIR")},
+        {"name": "Goer", "login": os.getenv("GOER_LOGIN"), "password": os.getenv("GOER_PASSWORD"),
+         "download_dir": os.getenv("GOER_DOWNLOAD_DIR"), "excel_path": os.getenv("GOER_EXCEL_PATH"),
+         "graf_path": os.getenv("GOER_GRAF_PATH"), "backup_dir": os.getenv("GOER_BACKUP_DIR")},
+        {"name": "Lu", "login": os.getenv("LU_LOGIN"), "password": os.getenv("LU_PASSWORD"),
+         "download_dir": os.getenv("LU_DOWNLOAD_DIR"), "excel_path": os.getenv("LU_EXCEL_PATH"),
+         "graf_path": os.getenv("LU_GRAF_PATH"), "backup_dir": os.getenv("LU_BACKUP_DIR")},
     ]
 
 
